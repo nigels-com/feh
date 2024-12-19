@@ -839,7 +839,6 @@ static char *feh_http_load_image(char *url)
 	CURL *curl;
 	CURLcode res;
 	CURLU *curlu;
-	CURLUcode rc;
 	char *normalized;
 	char *sfn;
 	FILE *sfp;
@@ -873,8 +872,7 @@ static char *feh_http_load_image(char *url)
 	/* libcurl requires escaped and normalized URL */
 	/* for example, spaces as %20 */
 	curlu = curl_url();
-	rc = curl_url_set(curlu, CURLUPART_URL, url, 0);
-	if (rc)
+	if (curl_url_set(curlu, CURLUPART_URL, url, 0) != CURLUE_OK)
 	{
 		weprintf("open url: Invalid URL");
 		curl_url_cleanup(curlu);
@@ -882,8 +880,7 @@ static char *feh_http_load_image(char *url)
 		return NULL;
 	}
 
-	rc = curl_url_get(curlu, CURLUPART_URL, &normalized, CURLU_PUNYCODE);
-	if (rc)
+	if (curl_url_get(curlu, CURLUPART_URL, &normalized, 0) != CURLUE_OK)
 	{
 		weprintf("open url: Invalid URL");
 		curl_url_cleanup(curlu);
