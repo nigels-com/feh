@@ -845,6 +845,7 @@ static char *feh_http_load_image(char *url)
 	char *tmpname;
 	char *basename;
 	char *path = NULL;
+	char *escaped = NULL;
 
 	if (opt.use_conversion_cache) {
 		if (!conversion_cache)
@@ -864,6 +865,15 @@ static char *feh_http_load_image(char *url)
 	curl = curl_easy_init();
 	if (!curl) {
 		weprintf("open url: libcurl initialization failure");
+		return NULL;
+	}
+
+	/* libcurl requires "escaped" URL such as space -> %20 */
+	escaped = curl_easy_escape(curl, url, strlen(url));
+	if (!escaped)
+	{
+		weprintf("open url: URL encode failure");
+		curl_easy_cleanup(curl);
 		return NULL;
 	}
 
@@ -907,7 +917,7 @@ static char *feh_http_load_image(char *url)
 			 * feh hanging indefinitely in unattended slideshows.
 			 */
 			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1800);
-			curl_easy_setopt(curl, CURLOPT_URL, url);
+			curl_easy_setopt(curl, CURLOPT_URL, escaped);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, sfp);
 			ebuff = emalloc(CURL_ERROR_SIZE);
 			curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, ebuff);
@@ -960,6 +970,7 @@ static char *feh_http_load_image(char *url)
 #endif
 		free(sfn);
 	}
+	curl_free(escaped);
 	curl_easy_cleanup(curl);
 	return NULL;
 }
