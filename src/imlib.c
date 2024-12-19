@@ -877,6 +877,8 @@ static char *feh_http_load_image(char *url)
 		return NULL;
 	}
 
+	D(("url %s, escaped %s\n", url, escaped))
+
 	basename = strrchr(url, '/') + 1;
 
 #ifdef HAVE_MKSTEMPS
