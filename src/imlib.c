@@ -872,7 +872,7 @@ static char *feh_http_load_image(char *url)
 	/* libcurl requires escaped and normalized URL */
 	/* for example, spaces as %20 */
 	curlu = curl_url();
-	if (curl_url_set(curlu, CURLUPART_URL, url, 0) != CURLUE_OK)
+	if (curl_url_set(curlu, CURLUPART_URL, url, CURLU_URLENCODE) != CURLUE_OK)
 	{
 		weprintf("open url: Invalid URL");
 		curl_url_cleanup(curlu);
