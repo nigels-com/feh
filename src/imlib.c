@@ -320,8 +320,8 @@ int feh_is_image(feh_file * file, int magic_flags)
 
 	/* imlib2 supports loading compressed images, let's have a look inside */
 	if (strcmp(mime_type, "application/gzip") == 0 ||
-	    strcmp(mime_type, "application/x-bzip2") == 0 ||
-	    strcmp(mime_type, "application/x-xz") == 0) {
+		strcmp(mime_type, "application/x-bzip2") == 0 ||
+		strcmp(mime_type, "application/x-xz") == 0) {
 		return feh_is_image(file, MAGIC_COMPRESS);
 	}
 
@@ -554,7 +554,7 @@ void feh_reload_image(winwidget w, int resize, int force_new)
 
 	w->mode = MODE_NORMAL;
 	if ((w->im_w != gib_imlib_image_get_width(w->im))
-	    || (w->im_h != gib_imlib_image_get_height(w->im)))
+		|| (w->im_h != gib_imlib_image_get_height(w->im)))
 		w->had_resize = 1;
 	if (w->has_rotated) {
 		Imlib_Image temp;
@@ -838,6 +838,9 @@ static char *feh_http_load_image(char *url)
 {
 	CURL *curl;
 	CURLcode res;
+	CURLU *curlu;
+	CURLUcode rc;
+	char *normalized;
 	char *sfn;
 	FILE *sfp;
 	int fd = -1;
@@ -845,7 +848,6 @@ static char *feh_http_load_image(char *url)
 	char *tmpname;
 	char *basename;
 	char *path = NULL;
-	char *escaped = NULL;
 
 	if (opt.use_conversion_cache) {
 		if (!conversion_cache)
@@ -868,16 +870,29 @@ static char *feh_http_load_image(char *url)
 		return NULL;
 	}
 
-	/* libcurl requires "escaped" URL such as space -> %20 */
-	escaped = curl_easy_escape(curl, url, strlen(url));
-	if (!escaped)
+	/* libcurl requires escaped and normalized URL */
+	/* for example, spaces as %20 */
+	curlu = curl_url();
+	rc = curl_url_set(curlu, CURLUPART_URL, url, 0);
+	if (rc)
 	{
-		weprintf("open url: URL encode failure");
+		weprintf("open url: Invalid URL");
+		curl_url_cleanup(curlu);
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
 
-	D(("url %s, escaped %s\n", url, escaped))
+	rc = curl_url_get(curlu, CURLUPART_URL, &normalized, CURLU_PUNYCODE);
+	if (rc)
+	{
+		weprintf("open url: Invalid URL");
+		curl_url_cleanup(curlu);
+		curl_easy_cleanup(curl);
+		return NULL;
+	}
+	curl_url_cleanup(curlu);
+
+	D(("url %s, escaped %s\n", url, normalized))
 
 	basename = strrchr(url, '/') + 1;
 
@@ -919,7 +934,7 @@ static char *feh_http_load_image(char *url)
 			 * feh hanging indefinitely in unattended slideshows.
 			 */
 			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1800);
-			curl_easy_setopt(curl, CURLOPT_URL, escaped);
+			curl_easy_setopt(curl, CURLOPT_URL, normalized);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, sfp);
 			ebuff = emalloc(CURL_ERROR_SIZE);
 			curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, ebuff);
@@ -972,7 +987,7 @@ static char *feh_http_load_image(char *url)
 #endif
 		free(sfn);
 	}
-	curl_free(escaped);
+	curl_free(normalized);
 	curl_easy_cleanup(curl);
 	return NULL;
 }
@@ -1215,7 +1230,7 @@ void feh_draw_exif(winwidget w)
 			while ( pos2 < 255 ) /* max 255 chars + 1 null byte per line */
 			{
 				if ( (buffer[pos] != '\n')
-				      && (buffer[pos] != '\0') )
+					  && (buffer[pos] != '\0') )
 				{
 					info_line[pos2] = buffer[pos];
 				}
@@ -1236,7 +1251,7 @@ void feh_draw_exif(winwidget w)
 			info_line[pos2] = '\0';
 
 			gib_imlib_get_text_size(fn, info_line, NULL, &line_width,
-                              &line_height, IMLIB_TEXT_TO_RIGHT);
+							  &line_height, IMLIB_TEXT_TO_RIGHT);
 
 			if (line_height > height)
 				height = line_height;
@@ -1670,7 +1685,7 @@ gib_list *feh_wrap_string(char *text, int wrap_width, Imlib_Font fn, gib_style *
 						pp = (char *) ll->data;
 						if (strcmp(pp, " ")) {
 							gib_imlib_get_text_size
-							    (fn, pp, style, &tw, &th, IMLIB_TEXT_TO_RIGHT);
+								(fn, pp, style, &tw, &th, IMLIB_TEXT_TO_RIGHT);
 							if (line_width == 0)
 								new_width = tw;
 							else
@@ -1681,8 +1696,8 @@ gib_list *feh_wrap_string(char *text, int wrap_width, Imlib_Font fn, gib_style *
 									int len;
 
 									len = strlen(line)
-									    + strlen(pp)
-									    + 2;
+										+ strlen(pp)
+										+ 2;
 									temp = emalloc(len);
 									snprintf(temp, len, "%s %s", line, pp);
 									free(line);
